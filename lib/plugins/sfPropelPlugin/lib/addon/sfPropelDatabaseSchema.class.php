@@ -623,6 +623,10 @@ class sfPropelDatabaseSchema
 
       foreach ($columns as $column => $attributes)
       {
+        if ($column == '_indexes') {
+          // Do not try to fix _indexes column
+          continue;
+        }
         if ($attributes == null)
         {
           // conventions for null attributes
