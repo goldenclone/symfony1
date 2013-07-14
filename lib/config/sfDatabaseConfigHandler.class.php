@@ -120,6 +120,26 @@ class sfDatabaseConfigHandler extends sfYamlConfigHandler
       {
         $parameters = $dbConfig['param'];
       }
+
+      if (isset($dbConfig['slaves']))
+      {
+        foreach ($dbConfig['slaves'] as &$slave)
+        {
+          // multiple slaves
+          if (!isset($dbConfig['slaves']['dsn']))
+          {
+            foreach ($slave as &$param)
+            {
+              $param = $this->replaceConstants($param);
+            }
+          } else {
+            // only 1 slave configured
+            $slave = $this->replaceConstants($slave);
+          }
+        }
+        $parameters['slaves'] = $dbConfig['slaves'];
+      }
+
       $parameters['name'] = $name;
 
       // append new data
