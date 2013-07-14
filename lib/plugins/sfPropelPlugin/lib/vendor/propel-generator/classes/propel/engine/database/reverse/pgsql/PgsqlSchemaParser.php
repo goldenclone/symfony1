@@ -36,34 +36,41 @@ class PgsqlSchemaParser extends BaseSchemaParser {
 	 */
 	 /** Map MySQL native types to Creole (JDBC) types. */
 	private static $pgsqlTypeMap = array(
-				'bool' => PropelTypes::BOOLEAN,
-				'boolean' => PropelTypes::BOOLEAN,
-				'tinyint' => PropelTypes::TINYINT,
-				'smallint' => PropelTypes::SMALLINT,
-				'mediumint' => PropelTypes::SMALLINT,
-				'int' => PropelTypes::INTEGER,
-				'int4' => PropelTypes::INTEGER,
-				'integer' => PropelTypes::INTEGER,
-				'int8' => PropelTypes::BIGINT,
-				'bigint' => PropelTypes::BIGINT,
-				'int24' => PropelTypes::BIGINT,
-				'real' => PropelTypes::REAL,
-				'float' => PropelTypes::FLOAT,
-				'decimal' => PropelTypes::DECIMAL,
-				'numeric' => PropelTypes::NUMERIC,
-				'double' => PropelTypes::DOUBLE,
-				'char' => PropelTypes::CHAR,
-				'varchar' => PropelTypes::VARCHAR,
-				'date' => PropelTypes::DATE,
-				'time' => PropelTypes::TIME,
-				'timetz' => PropelTypes::TIME,
-				//'year' => PropelTypes::YEAR,  PropelTypes::YEAR does not exist... does this need to be mapped to a different propel type?
-				'datetime' => PropelTypes::TIMESTAMP,
-				'timestamp' => PropelTypes::TIMESTAMP,
-				'timestamptz' => PropelTypes::TIMESTAMP,
-				'bytea' => PropelTypes::BLOB,
-				'text' => PropelTypes::LONGVARCHAR,
-	);
+        'bool' => PropelTypes::BOOLEAN,
+        'boolean' => PropelTypes::BOOLEAN,
+        'tinyint' => PropelTypes::TINYINT,
+        'smallint' => PropelTypes::SMALLINT,
+        'mediumint' => PropelTypes::SMALLINT,
+        'int2' => PropelTypes::SMALLINT,
+        'int' => PropelTypes::INTEGER,
+        'int4' => PropelTypes::INTEGER,
+        'serial4' => PropelTypes::INTEGER,
+        'integer' => PropelTypes::INTEGER,
+        'int8' => PropelTypes::BIGINT,
+        'bigint' => PropelTypes::BIGINT,
+        'bigserial' => PropelTypes::BIGINT,
+        'serial8' => PropelTypes::BIGINT,
+        'int24' => PropelTypes::BIGINT,
+        'real' => PropelTypes::REAL,
+        'float' => PropelTypes::FLOAT,
+        'float4' => PropelTypes::FLOAT,
+        'decimal' => PropelTypes::DECIMAL,
+        'numeric' => PropelTypes::DECIMAL,
+        'double' => PropelTypes::DOUBLE,
+        'float8' => PropelTypes::DOUBLE,
+        'char' => PropelTypes::CHAR,
+        'character' => PropelTypes::CHAR,
+        'varchar' => PropelTypes::VARCHAR,
+        'date' => PropelTypes::DATE,
+        'time' => PropelTypes::TIME,
+        'timetz' => PropelTypes::TIME,
+        //'year' => PropelTypes::YEAR,  PropelTypes::YEAR does not exist... does this need to be mapped to a different propel type?
+        'datetime' => PropelTypes::TIMESTAMP,
+        'timestamp' => PropelTypes::TIMESTAMP,
+        'timestamptz' => PropelTypes::TIMESTAMP,
+        'bytea' => PropelTypes::BLOB,
+        'text' => PropelTypes::LONGVARCHAR,
+    );
 
 	/**
 	 * Gets a type mapping from native types to Propel types
@@ -94,21 +101,25 @@ class PgsqlSchemaParser extends BaseSchemaParser {
 		$stmt = null;
 
 		$stmt = $this->dbh->query("SELECT c.oid,
-								    case when n.nspname='public' then c.relname else n.nspname||'.'||c.relname end as relname
-								    FROM pg_class c join pg_namespace n on (c.relnamespace=n.oid)
-								    WHERE c.relkind = 'r'
-								      AND n.nspname NOT IN ('information_schema','pg_catalog')
-								      AND n.nspname NOT LIKE 'pg_temp%'
-								      AND n.nspname NOT LIKE 'pg_toast%'
-								    ORDER BY relname");
+                                    c.relname, n.nspname
+                                    FROM pg_class c join pg_namespace n on (c.relnamespace=n.oid)
+                                    WHERE c.relkind = 'r'
+                                      AND n.nspname NOT IN ('information_schema','pg_catalog')
+                                      AND n.nspname NOT LIKE 'pg_temp%'
+                                      AND n.nspname NOT LIKE 'pg_toast%'
+                                    ORDER BY relname");
 
 		$tableWraps = array();
 
 		// First load the tables (important that this happen before filling out details of tables)
 		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 			$name = $row['relname'];
+            $namespacename = $row['nspname'];
+
 			$oid = $row['oid'];
 			$table = new Table($name);
+            //
+            $table->setIdMethod($database->getDefaultIdMethod());
 			$database->addTable($table);
 
 			// Create a wrapper to hold these tables and their associated OID
@@ -135,118 +146,123 @@ class PgsqlSchemaParser extends BaseSchemaParser {
 	}
 
 
-	 /**
-	 * Adds Columns to the specified table.
-	 *
-	 * @param      Table $table The Table model class to add columns to.
-	 * @param      int $oid The table OID
-	 * @param      string $version The database version.
-	 */
-	protected function addColumns(Table $table, $oid, $version)
-	{
+    /**
+     * Adds Columns to the specified table.
+     *
+     * @param  Table           $table   The Table model class to add columns to.
+     * @param  int             $oid     The table OID
+     * @param  string          $version The database version.
+     * @throws EngineException
+     */
+    protected function addColumns(Table $table, $oid, $version)
+    {
+        // Get the columns, types, etc.
+        // Based on code from pgAdmin3 (http://www.pgadmin.org/)
+        $stmt = $this->dbh->prepare("SELECT
+                                        att.attname,
+                                        att.atttypmod,
+                                        att.atthasdef,
+                                        att.attnotnull,
+                                        def.adsrc,
+                                        CASE WHEN att.attndims > 0 THEN 1 ELSE 0 END AS isarray,
+                                        CASE
+                                            WHEN ty.typname = 'bpchar'
+                                                THEN 'char'
+                                            WHEN ty.typname = '_bpchar'
+                                                THEN '_char'
+                                            ELSE
+                                                ty.typname
+                                        END AS typname,
+                                        ty.typtype
+                                    FROM pg_attribute att
+                                        JOIN pg_type ty ON ty.oid=att.atttypid
+                                        LEFT OUTER JOIN pg_attrdef def ON adrelid=att.attrelid AND adnum=att.attnum
+                                    WHERE att.attrelid = ? AND att.attnum > 0
+                                        AND att.attisdropped IS FALSE
+                                    ORDER BY att.attnum");
 
-		// Get the columns, types, etc.
-		// Based on code from pgAdmin3 (http://www.pgadmin.org/)
-		$stmt = $this->dbh->prepare("SELECT
-								        att.attname,
-								        att.atttypmod,
-								        att.atthasdef,
-								        att.attnotnull,
-								        def.adsrc,
-								        CASE WHEN att.attndims > 0 THEN 1 ELSE 0 END AS isarray,
-								        CASE
-								            WHEN ty.typname = 'bpchar'
-								                THEN 'char'
-								            WHEN ty.typname = '_bpchar'
-								                THEN '_char'
-								            ELSE
-								                ty.typname
-								        END AS typname,
-								        ty.typtype
-								    FROM pg_attribute att
-								        JOIN pg_type ty ON ty.oid=att.atttypid
-								        LEFT OUTER JOIN pg_attrdef def ON adrelid=att.attrelid AND adnum=att.attnum
-								    WHERE att.attrelid = ? AND att.attnum > 0
-								        AND att.attisdropped IS FALSE
-								    ORDER BY att.attnum");
+        $stmt->bindValue(1, $oid, PDO::PARAM_INT);
+        $stmt->execute();
 
-		$stmt->bindValue(1, $oid, PDO::PARAM_INT);
-		$stmt->execute();
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $size = null;
+            $precision = null;
+            $scale = null;
 
-			$size = null;
-			$precision = null;
-			$scale = null;
+            // Check to ensure that this column isn't an array data type
+            if (((int) $row['isarray']) === 1) {
+                throw new EngineException (sprintf ("Array datatypes are not currently supported [%s.%s]", $this->name, $row['attname']));
+            } // if (((int) $row['isarray']) === 1)
 
-			// Check to ensure that this column isn't an array data type
-			if (((int) $row['isarray']) === 1) {
-				throw new EngineException (sprintf ("Array datatypes are not currently supported [%s.%s]", $this->name, $row['attname']));
-			} // if (((int) $row['isarray']) === 1)
+            $name = $row['attname'];
 
-			$name = $row['attname'];
+            // If they type is a domain, Process it
+            if (strtolower ($row['typtype']) == 'd') {
+                $arrDomain = $this->processDomain ($row['typname']);
+                $type = $arrDomain['type'];
+                $size = $arrDomain['length'];
+                $precision = $size;
+                $scale = $arrDomain['scale'];
+                $boolHasDefault = (strlen (trim ($row['atthasdef'])) > 0) ? $row['atthasdef'] : $arrDomain['hasdefault'];
+                $default = (strlen (trim ($row['adsrc'])) > 0) ? $row['adsrc'] : $arrDomain['default'];
+                $is_nullable = (strlen (trim ($row['attnotnull'])) > 0) ? $row['attnotnull'] : $arrDomain['notnull'];
+                $is_nullable = (($is_nullable == 't') ? false : true);
+            } else {
+                $type = $row['typname'];
+                $arrLengthPrecision = $this->processLengthScale ($row['atttypmod'], $type);
+                $size = $arrLengthPrecision['length'];
+                $precision = $size;
+                $scale = $arrLengthPrecision['scale'];
+                $boolHasDefault = $row['atthasdef'];
+                $default = $row['adsrc'];
+                $is_nullable = (($row['attnotnull'] == 't') ? false : true);
+            } // else (strtolower ($row['typtype']) == 'd')
 
-			// If they type is a domain, Process it
-			if (strtolower ($row['typtype']) == 'd') {
-				$arrDomain = $this->processDomain ($row['typname']);
-				$type = $arrDomain['type'];
-				$size = $arrDomain['length'];
-				$precision = $size;
-				$scale = $arrDomain['scale'];
-				$boolHasDefault = (strlen (trim ($row['atthasdef'])) > 0) ? $row['atthasdef'] : $arrDomain['hasdefault'];
-				$default = (strlen (trim ($row['adsrc'])) > 0) ? $row['adsrc'] : $arrDomain['default'];
-				$is_nullable = (strlen (trim ($row['attnotnull'])) > 0) ? $row['attnotnull'] : $arrDomain['notnull'];
-				$is_nullable = (($is_nullable == 't') ? false : true);
-			} else {
-				$type = $row['typname'];
-				$arrLengthPrecision = $this->processLengthScale ($row['atttypmod'], $type);
-				$size = $arrLengthPrecision['length'];
-				$precision = $size;
-				$scale = $arrLengthPrecision['scale'];
-				$boolHasDefault = $row['atthasdef'];
-				$default = $row['adsrc'];
-				$is_nullable = (($row['attnotnull'] == 't') ? false : true);
-			} // else (strtolower ($row['typtype']) == 'd')
+            $autoincrement = null;
 
-			$autoincrement = null;
+            // if column has a default
+            if (($boolHasDefault == 't') && (strlen (trim ($default)) > 0)) {
+                if (!preg_match('/^nextval\(/', $default)) {
+                    $strDefault= preg_replace ('/::[\W\D]*/', '', $default);
+                    $default = str_replace ("'", '', $strDefault);
+                } else {
+                    $autoincrement = true;
+                    $default = null;
+                }
+            } else {
+                $default = null;
+            }
 
-			// if column has a default
-			if (($boolHasDefault == 't') && (strlen (trim ($default)) > 0)) {
-				if (!preg_match('/^nextval\(/', $default)) {
-					$strDefault= preg_replace ('/::[\W\D]*/', '', $default);
-					$default = str_replace ("'", '', $strDefault);
-				} else {
-					$autoincrement = true;
-					$default = null;
-				}
-			} else {
-				$default = null;
-			}
+            $propelType = $this->getMappedPropelType($type);
+            if (!$propelType) {
+                $propelType = Column::DEFAULT_TYPE;
+                $this->warn("Column [" . $table->getName() . "." . $name. "] has a column type (".$type.") that Propel does not support.");
+            }
 
-			$propelType = $this->getMappedPropelType($type);
-			if (!$propelType) {
-				$propelType = Column::DEFAULT_TYPE;
-				$this->warn("Column [" . $table->getName() . "." . $name. "] has a column type (".$type.") that Propel does not support.");
-			}
+            $column = new Column($name);
+            $column->setTable($table);
+            $column->setDomainForType($propelType);
+            // We may want to provide an option to include this:
+            // $column->getDomain()->replaceSqlType($type);
+            $column->getDomain()->replaceSize($size);
+            $column->getDomain()->replaceScale($scale);
+            if ($default !== null) {
+                if (in_array($default, array('now()'))) {
+                    $type = ColumnDefaultValue::TYPE_EXPR;
+                } else {
+                    $type = ColumnDefaultValue::TYPE_VALUE;
+                }
+                $column->getDomain()->setDefaultValue(new ColumnDefaultValue($default, $type));
+            }
+            $column->setAutoIncrement($autoincrement);
+            $column->setNotNull(!$is_nullable);
 
-			$column = new Column($name);
-			$column->setTable($table);
-			$column->setDomainForType($propelType);
-			// We may want to provide an option to include this:
-			// $column->getDomain()->replaceSqlType($type);
-			$column->getDomain()->replaceSize($size);
-			$column->getDomain()->replaceScale($scale);
-			if ($default !== null) {
-				$column->getDomain()->setDefaultValue(new ColumnDefaultValue($default, ColumnDefaultValue::TYPE_VALUE));
-			}
-			$column->setAutoIncrement($autoincrement);
-			$column->setNotNull(!$is_nullable);
-
-			$table->addColumn($column);
-		}
+            $table->addColumn($column);
+        }
 
 
-	} // addColumn()
+    } // addColumn()
 
 	private function processLengthScale($intTypmod, $strName)
 	{
