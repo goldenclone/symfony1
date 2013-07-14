@@ -88,6 +88,47 @@ class sfPropelDatabase extends sfPDODatabase
     Propel::getConfiguration(PropelConfiguration::TYPE_OBJECT)->setParameter('datasources.default', $this->getParameter('datasource'));
   }
 
+  protected function getSlavesConfiguration()
+  {
+      if (!$this->hasParameter('slaves'))
+      {
+        return array();
+      }
+
+      $parameters = $this->getParameter('slaves', array());
+
+      if (!is_array($parameters))
+      {
+        return array();
+      }
+
+      // only one slave connection configured
+      if (array_key_exists('dsn', $parameters))
+      {
+        $result = array(
+          'connection' => array(
+            'dsn' => $parameters['dsn'],
+            'user' => $parameters['username'],
+            'password' => $parameters['password'],
+            'classname' => $this->getParameter('classname'),
+          )
+        );
+      } else {
+        // multiple slave connections configured
+        $result = array();
+        foreach ($parameters as $name => $slave)
+        {
+          $result['connection'][$name] = array(
+            'dsn' => $slave['dsn'],
+            'user' => $slave['username'],
+            'password' => $slave['password'],
+            'classname' => $this->getParameter('classname'),
+          );
+        }
+      }
+
+      return $result;
+  }
   /**
    * Adds configuration for current datasource.
    */
@@ -140,6 +181,7 @@ class sfPropelDatabase extends sfPDODatabase
           'queries' => $this->getParameter('queries', array()),
         ),
       ),
+      'slaves'    => $this->getSlavesConfiguration(),
     ));
 
     $propelConfiguration->setParameter('datasources.'.$this->getParameter('datasource'), $event->getReturnValue());
