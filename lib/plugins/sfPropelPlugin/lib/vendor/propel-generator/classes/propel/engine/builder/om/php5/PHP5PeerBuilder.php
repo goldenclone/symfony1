@@ -585,10 +585,11 @@ abstract class ".$this->getClassname(). $extendingPeerClass . " {
 	/**
 	 * Method to do selects.
 	 *
-	 * @param      Criteria \$criteria The Criteria object used to build the SELECT statement.
-	 * @param      PropelPDO \$con
-	 * @return     array Array of selected Objects
-	 * @throws     PropelException Any exceptions caught during processing will be
+	 * @param  Criteria  \$criteria The Criteria object used to build the SELECT statement.
+	 * @param  PropelPDO \$con
+	 *
+	 * @return " . $this->getObjectClassname() . "[]
+	 * @throws PropelException Any exceptions caught during processing will be
 	 *		 rethrown wrapped into a PropelException.
 	 */
 	public static function doSelect(Criteria \$criteria, PropelPDO \$con = null)
