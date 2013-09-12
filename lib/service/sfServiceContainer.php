@@ -98,20 +98,25 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Gets a service container parameter.
    *
-   * @param  string $name The parameter name
+   * @param string $name The parameter name
    *
    * @return mixed  The parameter value
    *
-   * @throw  InvalidArgumentException if the parameter is not defined
+   * @throw InvalidArgumentException if the parameter is not defined
    */
   public function getParameter($name)
   {
-    if (!$this->hasParameter($name))
+    if ($this->hasParameter($name))
     {
-      throw new InvalidArgumentException(sprintf('The parameter "%s" must be defined.', $name));
+      return $this->parameters[strtolower($name)];
     }
 
-    return $this->parameters[strtolower($name)];
+    if (sfConfig::has($name))
+    {
+      return sfConfig::get($name);
+    }
+
+    throw new InvalidArgumentException(sprintf('The parameter "%s" must be defined.', $name));
   }
 
   /**
