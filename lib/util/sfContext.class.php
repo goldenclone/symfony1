@@ -446,20 +446,22 @@ class sfContext implements ArrayAccess
   {
     if (!isset($this->factories['service_container']))
     {
-      if (null === $this->serviceContainerConfiguration['class'])
-      {
-        return null;
-      }
-
       /** @var sfServiceContainer $sc */
       $sc = new $this->serviceContainerConfiguration['class']();
+      $sc->setService('sf_event_dispatcher', $this->dispatcher);
+
       $this->factories['service_container'] = $sc;
     }
 
     return $this->factories['service_container'];
   }
 
-  public function setServiceContainerConfiguration($config)
+  /**
+   * Set service container configuration
+   *
+   * @param array $config
+   */
+  public function setServiceContainerConfiguration(array $config)
   {
     $this->serviceContainerConfiguration = $config;
   }
