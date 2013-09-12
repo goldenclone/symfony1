@@ -20,8 +20,10 @@
 - %SF_SYMFONY_LIB_DIR%/util/sfNamespacedParameterHolder.class.php
 - %SF_SYMFONY_LIB_DIR%/view/sfView.class.php
 - %SF_SYMFONY_LIB_DIR%/view/sfViewParameterHolder.class.php
+- %SF_SYMFONY_LIB_DIR%/service/sfServiceContainerInterface.class.php
 - %SF_SYMFONY_LIB_DIR%/service/sfServiceContainer.class.php
 - %SF_SYMFONY_LIB_DIR%/service/sfServiceContainerBuilder.class.php
+- %SF_SYMFONY_LIB_DIR%/service/loader/sfServiceContainerLoaderInterface.class.php
 - %SF_SYMFONY_LIB_DIR%/service/loader/sfServiceContainerLoader.class.php
 - %SF_SYMFONY_LIB_DIR%/service/loader/sfServiceContainerLoaderArray.class.php
 
