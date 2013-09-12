@@ -26,6 +26,7 @@ class sfContext implements ArrayAccess
     $dispatcher          = null,
     $configuration       = null,
     $mailerConfiguration = array(),
+    $serviceContainerConfiguration = array(),
     $factories           = array();
 
   protected static
@@ -260,25 +261,30 @@ class sfContext implements ArrayAccess
      return $this->factories['mailer'];
    }
 
-   public function setMailerConfiguration($configuration)
-   {
-     $this->mailerConfiguration = $configuration;
-   }
+  /**
+   * Set mailer configuration.
+   *
+   * @param array $configuration
+   */
+  public function setMailerConfiguration($configuration)
+  {
+    $this->mailerConfiguration = $configuration;
+  }
 
-   /**
-    * Retrieve the logger.
-    *
-    * @return sfLogger The current sfLogger implementation instance.
-    */
-   public function getLogger()
-   {
-     if (!isset($this->factories['logger']))
-     {
-       $this->factories['logger'] = new sfNoLogger($this->dispatcher);
-     }
+  /**
+   * Retrieve the logger.
+   *
+   * @return sfLogger The current sfLogger implementation instance.
+   */
+  public function getLogger()
+  {
+    if (!isset($this->factories['logger']))
+    {
+      $this->factories['logger'] = new sfNoLogger($this->dispatcher);
+    }
 
-     return $this->factories['logger'];
-   }
+    return $this->factories['logger'];
+  }
 
   /**
    * Retrieve a database connection from the database manager.
@@ -432,6 +438,46 @@ class sfContext implements ArrayAccess
   }
 
   /**
+   * Retrieves the service container.
+   *
+   * @return sfServiceContainer The current sfServiceContainer implementation instance.
+   */
+  public function getServiceContainer()
+  {
+    if (!isset($this->factories['service_container']))
+    {
+      if (null === $this->serviceContainerConfiguration['class'])
+      {
+        return null;
+      }
+
+      /** @var sfServiceContainer $sc */
+      $sc = new $this->serviceContainerConfiguration['class']();
+      $sc->setParameters($this->serviceContainerConfiguration['parameters']);
+      $this->factories['service_container'] = $sc;
+    }
+
+    return $this->factories['service_container'];
+  }
+
+  public function setServiceContainerConfiguration($config)
+  {
+    $this->serviceContainerConfiguration = $config;
+  }
+
+  /**
+   * Retrieves a service from the service container.
+   *
+   * @param string $id The service identifier
+   *
+   * @return object The service instance
+   */
+   public function getService($id)
+   {
+     return $this->getServiceContainer()->getService($id);
+   }
+
+  /**
    * Returns the configuration cache.
    *
    * @return sfConfigCache A sfConfigCache instance
@@ -440,7 +486,7 @@ class sfContext implements ArrayAccess
   {
     return $this->configuration->getConfigCache();
   }
-  
+
   /**
    * Returns true if the context object exists (implements the ArrayAccess interface).
    *
@@ -544,7 +590,7 @@ class sfContext implements ArrayAccess
 
     return $parameters;
   }
-  
+
   /**
    * Calls methods defined via sfEventDispatcher.
    *
