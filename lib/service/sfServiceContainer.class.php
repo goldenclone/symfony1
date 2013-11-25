@@ -102,7 +102,7 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
    *
    * @return mixed  The parameter value
    *
-   * @throw InvalidArgumentException if the parameter is not defined
+   * @throws InvalidArgumentException if the parameter is not defined
    */
   public function getParameter($name)
   {
@@ -175,7 +175,7 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
    *
    * @return object The associated service
    *
-   * @throw InvalidArgumentException if the service is not defined
+   * @throws InvalidArgumentException if the service is not defined
    */
   public function getService($id)
   {
@@ -215,7 +215,7 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Returns true if the parameter name is defined (implements the ArrayAccess interface).
    *
-   * @param  string  The parameter name
+   * @param string $name The parameter name
    *
    * @return Boolean true if the parameter name is defined, false otherwise
    */
@@ -227,7 +227,7 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Gets a service container parameter (implements the ArrayAccess interface).
    *
-   * @param  string The parameter name
+   * @param  string $name The parameter name
    *
    * @return mixed  The parameter value
    */
@@ -239,8 +239,8 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Sets a parameter (implements the ArrayAccess interface).
    *
-   * @param string The parameter name
-   * @param mixed  The parameter value
+   * @param string $name  The parameter name
+   * @param mixed  $value The parameter value
    */
   public function offsetSet($name, $value)
   {
@@ -250,7 +250,7 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Removes a parameter (implements the ArrayAccess interface).
    *
-   * @param string The parameter name
+   * @param string $name The parameter name
    */
   public function offsetUnset($name)
   {
@@ -260,7 +260,7 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Returns true if the container has a service with the given identifier.
    *
-   * @param  string  The service identifier
+   * @param string $id The service identifier
    *
    * @return Boolean true if the container has a service with the given identifier, false otherwise
    */
@@ -272,7 +272,7 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Gets the service associated with the given identifier.
    *
-   * @param  string The service identifier
+   * @param string $id The service identifier
    *
    * @return mixed  The service instance associated with the given identifier
    */
@@ -284,8 +284,8 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Sets a service.
    *
-   * @param string The service identifier
-   * @param mixed  A service instance
+   * @param string $id      The service identifier
+   * @param mixed  $service A service instance
    */
   public function __set($id, $service)
   {
@@ -295,7 +295,9 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   /**
    * Removes a service by identifier.
    *
-   * @param string The service identifier
+   * @param string $id The service identifier
+   *
+   * @throws LogicException
    */
   public function __unset($id)
   {

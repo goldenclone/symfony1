@@ -52,12 +52,12 @@ class sfServiceContainerBuilder extends sfServiceContainer
   /**
    * Gets a service.
    *
-   * @param  string $id The service identifier
+   * @param string $id The service identifier
    *
    * @return object The associated service
    *
-   * @throw InvalidArgumentException if the service is not defined
-   * @throw LogicException if the service has a circular reference to itself
+   * @throws InvalidArgumentException if the service is not defined
+   * @throws LogicException if the service has a circular reference to itself
    */
   public function getService($id)
   {
@@ -182,6 +182,8 @@ class sfServiceContainerBuilder extends sfServiceContainer
    *
    * @param  string              $id         The service identifier
    * @param  sfServiceDefinition $definition A sfServiceDefinition instance
+   *
+   * @return sfServiceDefinition
    */
   public function setServiceDefinition($id, sfServiceDefinition $definition)
   {
@@ -209,7 +211,7 @@ class sfServiceContainerBuilder extends sfServiceContainer
    *
    * @return sfServiceDefinition A sfServiceDefinition instance
    *
-   * @throw InvalidArgumentException if the service definition does not exist
+   * @throws InvalidArgumentException if the service definition does not exist
    */
   public function getServiceDefinition($id)
   {
@@ -227,6 +229,8 @@ class sfServiceContainerBuilder extends sfServiceContainer
    * @param  sfServiceDefinition $definition A service definition instance
    *
    * @return object              The service described by the service definition
+   *
+   * @throws InvalidArgumentException
    */
   protected function createService(sfServiceDefinition $definition)
   {
