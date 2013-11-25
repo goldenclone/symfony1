@@ -32,14 +32,15 @@ $configuration = array(
           'password' => 'bar',
           'classname' => 'PropelPDO',
           'options' => array(
-            'ATTR_PERSISTENT' => true,
             'ATTR_AUTOCOMMIT' => false,
+            'ATTR_PERSISTENT' => true,
           ),
           'settings' => array(
             'charset' => array('value' => 'utf8'),
             'queries' => array(),
           ),
         ),
+        'slaves' => array()
       ),
       'default' => 'propel',
     ),
