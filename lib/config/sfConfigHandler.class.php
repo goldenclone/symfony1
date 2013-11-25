@@ -96,7 +96,9 @@ abstract class sfConfigHandler
   {
     if (is_array($path))
     {
-      array_walk_recursive($path, create_function('&$path', '$path = sfConfigHandler::replacePath($path);'));
+      array_walk_recursive($path, function (&$path) {
+        $path = sfConfigHandler::replacePath($path);
+      });
     }
     else
     {
