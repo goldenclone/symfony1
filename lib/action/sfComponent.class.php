@@ -3,7 +3,7 @@
 /*
  * This file is part of the symfony package.
  * (c) 2004-2006 Fabien Potencier <fabien.potencier@symfony-project.com>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -104,6 +104,28 @@ abstract class sfComponent
   public final function getContext()
   {
     return $this->context;
+  }
+
+  /**
+   * Retrieves the current service container instance.
+   *
+   * @return sfServiceContainer The current sfServiceContainer instance
+   */
+  public final function getServiceContainer()
+  {
+    return $this->context->getServiceContainer();
+  }
+
+  /**
+   * Retrieves a service from the service container.
+   *
+   * @param  string $id The service identifier
+   *
+   * @return object The service instance
+   */
+  public function getService($id)
+  {
+    return $this->getServiceContainer()->getService($id);
   }
 
   /**

@@ -3,7 +3,7 @@
 /*
  * This file is part of the symfony package.
  * (c) Fabien Potencier <fabien.potencier@symfony-project.com>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -18,10 +18,14 @@
  */
 abstract class sfCommandApplicationTask extends sfTask
 {
-  protected
+  /** @var sfCommandApplication|null  */
+  protected $commandApplication = null;
+
+  private
     $mailer = null,
     $routing = null,
-    $commandApplication = null;
+    $serviceContainer = null,
+    $factoryConfiguration = null;
 
   /**
    * Sets the command application instance for this task.
@@ -109,7 +113,7 @@ abstract class sfCommandApplicationTask extends sfTask
    */
   protected function getMailer()
   {
-    if (!$this->mailer)
+    if ($this->mailer === null)
     {
       $this->mailer = $this->initializeMailer();
     }
@@ -123,7 +127,7 @@ abstract class sfCommandApplicationTask extends sfTask
     Swift::registerAutoload();
     sfMailer::initialize();
 
-    $config = sfFactoryConfigHandler::getConfiguration($this->configuration->getConfigPaths('config/factories.yml'));
+    $config = $this->getFactoryConfiguration();
 
     return new $config['mailer']['class']($this->dispatcher, $config['mailer']['param']);
   }
@@ -140,7 +144,7 @@ abstract class sfCommandApplicationTask extends sfTask
    */
   protected function getRouting()
   {
-    if (!$this->routing)
+    if ($this->routing === null)
     {
       $this->routing = $this->initializeRouting();
     }
@@ -163,4 +167,52 @@ abstract class sfCommandApplicationTask extends sfTask
 
     return $routing;
   }
+
+  /**
+   * Returns the service container instance.
+   *
+   * Notice that your task should accept an application option.
+   * The routing configuration is read from the current configuration
+   * instance, which is automatically created according to the current
+   * --application option.
+   *
+   * @return sfServiceContainer An application service container
+   */
+  protected function getServiceContainer()
+  {
+    if (null === $this->serviceContainer)
+    {
+      $class = require $this->configuration->getConfigCache()->checkConfig('config/services.yml', true);
+
+      $this->serviceContainer = new $class();
+      $this->serviceContainer->setService('sf_event_dispatcher', $this->dispatcher);
+    }
+
+    return $this->serviceContainer;
+  }
+
+  /**
+   * Retrieves a service from the service container.
+   *
+   * @param  string $id The service identifier
+   *
+   * @return object The service instance
+   */
+  public function getService($id)
+  {
+    return $this->getServiceContainer()->getService($id);
+  }
+
+  protected function getFactoryConfiguration()
+  {
+    if (null === $this->factoryConfiguration)
+    {
+      $this->factoryConfiguration = sfFactoryConfigHandler::getConfiguration(
+        $this->configuration->getConfigPaths('config/factories.yml')
+      );
+    }
+
+    return $this->factoryConfiguration;
+  }
+
 }
