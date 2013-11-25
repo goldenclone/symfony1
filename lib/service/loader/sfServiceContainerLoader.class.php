@@ -65,6 +65,8 @@ abstract class sfServiceContainerLoader implements sfServiceContainerLoaderInter
    * You can also pass multiple resource paths to the constructor.
    *
    * @param mixed $resource The resource path
+   *
+   * @throws LogicException
    */
   public function load($resource)
   {
