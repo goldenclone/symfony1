@@ -84,7 +84,7 @@ function has_component_slot($name)
   {
     return false;
   }
-  
+
   // check to see if component slot is empty (null)
   if ($viewInstance->getComponentSlot($name))
   {
@@ -213,7 +213,9 @@ function get_partial($templateName, $vars = array())
   }
   $actionName = '_'.$templateName;
 
-  require($context->getConfigCache()->checkConfig('modules/'.$moduleName.'/config/module.yml'));
+  if ($context->getConfiguration() !== null) {
+      require($context->getConfigCache()->checkConfig('modules/'.$moduleName.'/config/module.yml'));
+  }
 
   $class = sfConfig::get('mod_'.strtolower($moduleName).'_partial_view_class', 'sf').'PartialView';
   $view = new $class($context, $moduleName, $actionName, '');
