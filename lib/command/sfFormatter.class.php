@@ -23,7 +23,12 @@ class sfFormatter
 
   function __construct($maxLineSize = null)
   {
-    if (null === $maxLineSize)
+    $this->size = $maxLineSize;
+  }
+
+  protected function getSize()
+  {
+    if ($this->size === null)
     {
       if (function_exists('shell_exec'))
       {
@@ -34,9 +39,11 @@ class sfFormatter
       {
         $maxLineSize = 78;
       }
+
+      $this->size = $maxLineSize;
     }
 
-    $this->size = $maxLineSize;
+    return $this->size;
   }
 
   /**
@@ -75,7 +82,7 @@ class sfFormatter
   {
     if (!$size)
     {
-      $size = $this->size;
+      $size = $this->getSize();
     }
 
     $section = sprintf('>> %-9s ', $section);
@@ -95,7 +102,7 @@ class sfFormatter
   {
     if (!$size)
     {
-      $size = $this->size;
+      $size = $this->getSize();
     }
 
     if (strlen($text) < $size)

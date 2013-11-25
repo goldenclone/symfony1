@@ -94,7 +94,7 @@ class sfAnsiColorFormatter extends sfFormatter
   {
     if (null === $size)
     {
-      $size = $this->size;
+      $size = $this->getSize();
     }
 
     $style = array_key_exists($style, $this->styles) ? $style : 'INFO';
@@ -115,7 +115,7 @@ class sfAnsiColorFormatter extends sfFormatter
   {
     if (!$size)
     {
-      $size = $this->size;
+      $size = $this->getSize();
     }
 
     if (strlen($text) < $size)
