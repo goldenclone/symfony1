@@ -1,2 +1,3 @@
 # Core Services:
+#   sf_user (only if non-cli)
 #   sf_event_dispatcher
