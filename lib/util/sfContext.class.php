@@ -22,16 +22,37 @@
  */
 class sfContext implements ArrayAccess
 {
-  protected
-    $dispatcher          = null,
-    $configuration       = null,
-    $mailerConfiguration = array(),
-    $serviceContainerConfiguration = array(),
-    $factories           = array();
+  /**
+   * @var sfEventDispatcher
+   */
+  protected $dispatcher = null;
 
-  protected static
-    $instances = array(),
-    $current   = 'default';
+  /**
+   * @var sfApplicationConfiguration
+   */
+  protected $configuration       = null;
+
+  /**
+   * @var array
+   */
+  protected $mailerConfiguration = array();
+
+  /**
+   * @var array
+   */
+  protected $serviceContainerConfiguration = array();
+
+  protected $factories           = array();
+
+  /**
+   * @var sfContext[]
+   */
+  protected static $instances = array();
+
+  /**
+   * @var string
+   */
+  protected static $current   = 'default';
 
   /**
    * Creates a new context instance.
@@ -41,6 +62,8 @@ class sfContext implements ArrayAccess
    * @param  string                     $class          The context class to use (sfContext by default)
    *
    * @return sfContext                  An sfContext instance
+   *
+   * @throws sfFactoryException
    */
   static public function createInstance(sfApplicationConfiguration $configuration, $name = null, $class = __CLASS__)
   {
@@ -294,7 +317,7 @@ class sfContext implements ArrayAccess
    *
    * If the [sf_use_database] setting is off, this will return null.
    *
-   * @param  name  $name  A database name.
+   * @param  string  $name  A database name.
    *
    * @return mixed A database instance.
    *
@@ -449,6 +472,7 @@ class sfContext implements ArrayAccess
       /** @var sfServiceContainer $sc */
       $sc = new $this->serviceContainerConfiguration['class']();
       $sc->setService('sf_event_dispatcher', $this->dispatcher);
+      $sc->setService('sf_user', $this->getUser());
 
       $this->factories['service_container'] = $sc;
     }
