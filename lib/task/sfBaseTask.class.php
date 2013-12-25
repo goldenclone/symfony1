@@ -18,10 +18,27 @@
  */
 abstract class sfBaseTask extends sfCommandApplicationTask
 {
-  protected
-    $configuration   = null,
-    $pluginManager   = null,
-    $statusStartTime = null;
+  /** @var null|sfApplicationConfiguration */
+  protected $configuration = null;
+
+  /** @var null|sfSymfonyPluginManager */
+  protected $pluginManager = null;
+
+  /** @var null */
+  protected $statusStartTime = null;
+
+  protected function getArgOrOptVal(sfCommandManager $commandManager, $name, $default = null)
+  {
+    if ($commandManager->getArgumentSet()->hasArgument($name)) {
+      return $commandManager->getArgumentValue($name);
+    }
+
+    if ($commandManager->getOptionSet()->hasOption($name)) {
+      return $commandManager->getOptionValue($name);
+    }
+
+    return $default;
+  }
 
   /**
    * @see sfTask
@@ -46,8 +63,8 @@ abstract class sfBaseTask extends sfCommandApplicationTask
     $requiresApplication = $commandManager->getArgumentSet()->hasArgument('application') || $commandManager->getOptionSet()->hasOption('application');
     if (null === $this->configuration || ($requiresApplication && !$this->configuration instanceof sfApplicationConfiguration))
     {
-      $application = $commandManager->getArgumentSet()->hasArgument('application') ? $commandManager->getArgumentValue('application') : ($commandManager->getOptionSet()->hasOption('application') ? $commandManager->getOptionValue('application') : null);
-      $env = $commandManager->getOptionSet()->hasOption('env') ? $commandManager->getOptionValue('env') : 'test';
+      $application = $this->getArgOrOptVal($commandManager, 'application');
+      $env = $this->getArgOrOptVal($commandManager, 'env', 'test');
 
       if (true === $application)
       {
