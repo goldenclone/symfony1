@@ -3,7 +3,7 @@
 /*
  * This file is part of the symfony package.
  * (c) 2004-2006 Fabien Potencier <fabien.potencier@symfony-project.com>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -83,6 +83,9 @@ EOF;
       }
     }
 
+    // force cache generation for existing modules
+    $this->generateModulesCacheFiles($modules);
+
     $templates = $this->findTemplates($modules);
 
     $data['getTemplateDir'] = $this->optimizeGetTemplateDir($modules, $templates);
@@ -96,9 +99,22 @@ EOF;
     }
 
     $this->logSection('file+', $target);
-    file_put_contents($target, '<?php return '.var_export($data, true).';');
+    $this->saveCacheFile($target, $data);
 
     umask($current_umask);
+  }
+
+  protected function saveCacheFile($target, $data)
+  {
+    $saveData = var_export($data, true);
+
+    $currentUmask = umask(0000);
+    if (false !== file_put_contents($target, '<?php return '. $saveData . ';' . PHP_EOL))
+    {
+      chmod($target, 0666);
+    }
+
+    umask($currentUmask);
   }
 
   protected function optimizeGetControllerDirs($modules)
@@ -179,6 +195,30 @@ EOF;
     }
 
     return $files;
+  }
+
+  protected function generateModulesCacheFiles($modules)
+  {
+    static $configs = array('cache', 'filters', 'module', 'security', 'view');
+
+    foreach ($modules as $module)
+    {
+      foreach ($configs as $config)
+      {
+        $configFName = 'modules/'.$module.'/config/' . $config . '.yml';
+        $fName = $this->configuration->getConfigCache()->getCacheName($configFName);
+        if (file_exists($fName))
+        {
+          unlink($fName);
+        }
+
+        $fName = $this->configuration->getConfigCache()->checkConfig('modules/'.$module.'/config/' . $config . '.yml', true);
+        if (!$fName !== null)
+        {
+          $this->logSection('file+', $fName);
+        }
+      }
+    }
   }
 
   protected function findModules()
