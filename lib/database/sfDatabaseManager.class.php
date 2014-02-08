@@ -94,7 +94,7 @@ class sfDatabaseManager
    *
    * @param string $name A database name
    *
-   * @return mixed A Database instance
+   * @return sfDatabase A Database instance
    *
    * @throws <b>sfDatabaseException</b> If the requested database name does not exist
    */
