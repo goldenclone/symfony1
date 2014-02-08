@@ -18,11 +18,20 @@
  */
 abstract class sfRouting
 {
-  protected
-    $dispatcher        = null,
-    $cache             = null,
-    $defaultParameters = array(),
-    $options           = array();
+
+  /**
+   * @var null|sfEventDispatcher
+   */
+  protected $dispatcher = null;
+
+  /**
+   * @var sfCache|null
+   */
+  protected $cache = null;
+
+  protected $defaultParameters = array();
+
+  protected $options           = array();
 
   /**
    * Class constructor.
@@ -130,6 +139,15 @@ abstract class sfRouting
    * @return array The route array
    */
   abstract public function getRoutes();
+
+  /**
+   * Gets route from given name
+   *
+   * @param  string $name The route name
+   *
+   * @return sfRoute
+   */
+   abstract public function getRoute($name);
 
   /**
    * Sets the compiled route array.
