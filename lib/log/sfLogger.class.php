@@ -3,7 +3,7 @@
 /*
  * This file is part of the symfony package.
  * (c) 2004-2006 Fabien Potencier <fabien.potencier@symfony-project.com>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -26,7 +26,7 @@
  * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
  * @version    SVN: $Id: sfLogger.class.php 23810 2009-11-12 11:07:44Z Kris.Wallsmith $
  */
-abstract class sfLogger
+abstract class sfLogger implements sfLoggerInterface
 {
   const EMERG   = 0; // System is unusable
   const ALERT   = 1; // Immediate action required
@@ -75,7 +75,7 @@ abstract class sfLogger
   {
     $this->dispatcher = $dispatcher;
     $this->options = $options;
-    
+
     if (isset($this->options['level']))
     {
       $this->setLogLevel($this->options['level']);
@@ -83,7 +83,7 @@ abstract class sfLogger
 
     $dispatcher->connect('application.log', array($this, 'listenToLogEvent'));
   }
-  
+
   /**
    * Returns the options for the logger instance.
    */
@@ -91,7 +91,7 @@ abstract class sfLogger
   {
     return $this->options;
   }
-  
+
   /**
    * Returns the options for the logger instance.
    */
