@@ -57,6 +57,7 @@ class sfPatternRouting extends sfRouting
       'generate_shortest_url'            => true,
       'extra_parameters_as_query_string' => true,
       'lookup_cache_dedicated_keys'      => false,
+      'serialize_cached_values'          => true,
     ), $options);
 
     // for BC
@@ -67,9 +68,19 @@ class sfPatternRouting extends sfRouting
 
     parent::initialize($dispatcher, $cache, $options);
 
-    if (null !== $this->cache && !$options['lookup_cache_dedicated_keys'] && $cacheData = $this->cache->get('symfony.routing.data'))
+    if (null !== $this->cache && !$options['lookup_cache_dedicated_keys'])
     {
-      $this->cacheData = unserialize($cacheData);
+      if ($cacheData = $this->cache->get('symfony.routing.data'))
+      {
+        if ($this->options['serialize_cached_values'])
+        {
+          $this->cacheData = unserialize($cacheData);
+        }
+        else
+        {
+          $this->cacheData = $cacheData;
+        }
+      }
     }
   }
 
@@ -462,7 +473,10 @@ class sfPatternRouting extends sfRouting
       $cacheKey = $this->getParseCacheKey($url);
       if ($this->options['lookup_cache_dedicated_keys'] && $info = $this->cache->get($cacheKey))
       {
-        return unserialize($info);
+        if ($this->options['serialize_cached_values']) {
+          $info = unserialize($info);
+        }
+        return $info;
       }
       elseif (isset($this->cacheData[$cacheKey]))
       {
@@ -477,7 +491,11 @@ class sfPatternRouting extends sfRouting
     {
       if ($this->options['lookup_cache_dedicated_keys'])
       {
-        $this->cache->set($cacheKey, serialize($info));
+        if ($this->options['serialize_cached_values']) {
+          $this->cache->set($cacheKey, serialize($info));
+        } else {
+          $this->cache->set($cacheKey, $info);
+        }
       }
       else
       {
@@ -572,7 +590,15 @@ class sfPatternRouting extends sfRouting
     if (null !== $this->cache && $this->cacheChanged)
     {
       $this->cacheChanged = false;
-      $this->cache->set('symfony.routing.data', serialize($this->cacheData));
+
+      if ($this->options['serialize_cached_values'])
+      {
+        $this->cache->set('symfony.routing.data', serialize($this->cacheData));
+      }
+      else
+      {
+        $this->cache->set('symfony.routing.data', $this->cacheData);
+      }
     }
   }
 }
