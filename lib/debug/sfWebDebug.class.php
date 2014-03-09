@@ -78,8 +78,6 @@ class sfWebDebug
     {
       $this->setPanel('time', new sfWebDebugPanelTimer($this));
     }
-
-    $this->setPanel('mailer', new sfWebDebugPanelMailer($this));
   }
 
   /**

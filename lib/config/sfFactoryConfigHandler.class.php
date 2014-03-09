@@ -41,7 +41,7 @@ class sfFactoryConfigHandler extends sfYamlConfigHandler
     $instances = array();
 
     // available list of factories
-    $factories = array('view_cache_manager', 'logger', 'i18n', 'controller', 'request', 'response', 'routing', 'storage', 'user', 'view_cache', 'mailer', 'service_container');
+    $factories = array('view_cache_manager', 'logger', 'i18n', 'controller', 'request', 'response', 'routing', 'storage', 'user', 'view_cache', 'service_container');
 
     // let's do our fancy work
     foreach ($factories as $factory)
@@ -217,16 +217,6 @@ class sfFactoryConfigHandler extends sfYamlConfigHandler
                          "  \$class = sfConfig::get('sf_factory_logger', '%s');\n  \$this->factories['logger'] = new \$class(\$this->dispatcher, array_merge(array('auto_shutdown' => false), sfConfig::get('sf_factory_logger_parameters', %s)));\n".
                          "  %s"
                          , $class, var_export($parameters, true), $loggers);
-          break;
-
-        case 'mailer':
-          $instances[] = sprintf(
-                        "if (!class_exists('Swift')) {\n".
-                        "  \$swift_dir = sfConfig::get('sf_swiftmailer_dir', sfConfig::get('sf_symfony_lib_dir').'/vendor/swiftmailer/lib');\n".
-                        "  require_once \$swift_dir.'/swift_required.php';\n".
-                        "}\n".
-                        "\$this->setMailerConfiguration(array_merge(array('class' => sfConfig::get('sf_factory_mailer', '%s')), sfConfig::get('sf_factory_mailer_parameters', %s)));\n"
-                        , $class, var_export($parameters, true));
           break;
 
         case 'service_container':

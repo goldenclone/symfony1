@@ -48,7 +48,6 @@ abstract class sfTestFunctionalBase
       'request'  => 'sfTesterRequest',
       'response' => 'sfTesterResponse',
       'user'     => 'sfTesterUser',
-      'mailer'   => 'sfTesterMailer',
     ), $testers));
 
     // register our shutdown function
