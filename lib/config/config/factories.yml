@@ -98,20 +98,5 @@ default:
             level: debug
             file: %SF_LOG_DIR%/%SF_APP%_%SF_ENVIRONMENT%.log
 
-  mailer:
-    class: sfMailer
-    param:
-      logging:           %SF_LOGGING_ENABLED%
-      charset:           %SF_CHARSET%
-      delivery_strategy: realtime
-      transport:
-        class: Swift_SmtpTransport
-        param:
-          host:       localhost
-          port:       25
-          encryption: ~
-          username:   ~
-          password:   ~
-
   service_container:
     class: sfServiceContainer
