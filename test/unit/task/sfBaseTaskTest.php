@@ -36,7 +36,7 @@ require_once $rootDir.'/config/ProjectConfiguration.class.php';
 $configuration = new ProjectConfiguration($rootDir, $dispatcher);
 $autoload = sfSimpleAutoload::getInstance();
 
-$t = new lime_test(16);
+$t = new lime_test(13);
 $task = new TestTask($dispatcher, new sfFormatter());
 
 // ->initializeAutoload()
