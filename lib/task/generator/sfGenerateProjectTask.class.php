@@ -3,7 +3,7 @@
 /*
  * This file is part of the symfony package.
  * (c) 2004-2006 Fabien Potencier <fabien.potencier@symfony-project.com>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -110,11 +110,31 @@ EOF;
     $this->installDir(dirname(__FILE__).'/skeleton/project');
 
     // update ProjectConfiguration class (use a relative path when the symfony core is nested within the project)
+    if (0 === strpos(sfConfig::get('sf_symfony_lib_dir'), sfConfig::get('sf_root_dir'))) {
+      $symfonyCoreAutoload = sprintf(
+        'dirname(__FILE__).\'/..%s/autoload/sfCoreAutoload.class.php\'',
+        str_replace(sfConfig::get('sf_root_dir'), '', sfConfig::get('sf_symfony_lib_dir'))
+      );
+    }
+    else
+    {
+      $symfonyCoreAutoload = var_export(sfConfig::get('sf_symfony_lib_dir').'/autoload/sfCoreAutoload.class.php', true);
+    }
+
     $symfonyCoreAutoload = 0 === strpos(sfConfig::get('sf_symfony_lib_dir'), sfConfig::get('sf_root_dir')) ?
       sprintf('dirname(__FILE__).\'/..%s/autoload/sfCoreAutoload.class.php\'', str_replace(sfConfig::get('sf_root_dir'), '', sfConfig::get('sf_symfony_lib_dir'))) :
       var_export(sfConfig::get('sf_symfony_lib_dir').'/autoload/sfCoreAutoload.class.php', true);
 
-    $this->replaceTokens(array(sfConfig::get('sf_config_dir')), array('SYMFONY_CORE_AUTOLOAD' => str_replace('\\', '/', $symfonyCoreAutoload)));
+    $this->replaceTokens(
+      array(sfConfig::get('sf_config_dir')),
+      array('SYMFONY_CORE_AUTOLOAD' => str_replace('\\', '/', $symfonyCoreAutoload))
+    );
+
+/*
+    $this->replaceTokens(
+      array(sfConfig::get('sf_config_dir')),
+      array('SYMFONY_CORE_AUTOLOAD' => str_replace('\\', '/', '__DIR__ . \'/../vendor/autoload.php\''))
+    );*/
 
     $this->tokens = array(
       'ORM'          => $this->options['orm'],
