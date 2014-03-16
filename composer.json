@@ -1,6 +1,6 @@
 {
     "name": "goldenclone/symfony1",
-    "description": "Fork of symfony 1.4",
+    "description": "Fork of symfony 1x",
     "license": "MIT",
     "type": "library",
     "autoload": {
@@ -8,7 +8,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.4"
+            "dev-master": "1.5"
         }
     },
     "bin": ["data/bin/symfony"]
