@@ -18,10 +18,22 @@
  */
 class sfI18N
 {
+  /**
+   * @var sfApplicationConfiguration
+   */
+  protected $configuration;
+
+  /**
+   * @var sfEventDispatcher
+   */
+  protected $dispatcher;
+
+  /**
+   * @var sfCache|null
+   */
+  protected $cache;
+
   protected
-    $configuration = null,
-    $dispatcher    = null,
-    $cache         = null,
     $options       = array(),
     $culture       = 'en',
     $messageSource = null,
