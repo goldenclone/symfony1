@@ -1,3 +1,152 @@
 # Core Services:
-#   sf_user (only if non-cli)
 #   sf_event_dispatcher
+#   sf_application_configuration
+all:
+  services:
+    logger:
+      class: %logger.class%
+      arguments: [@sf_event_dispatcher, %logger.param%]
+
+    controller:
+      class: %controller.class%
+      arguments: [@sf_context]
+
+    request:
+      class: %request.class%
+      arguments: [@sf_event_dispatcher, [], [], %request.param%]
+
+    response:
+      class: sfResponseFactory
+      constructor: make
+      arguments: [%response.class%, @sf_event_dispatcher, %response.param%, @request]
+
+    storage:
+      class: %storage.class%
+      arguments: [%storage.param%]
+
+    user:
+      class: sfUserFactory
+      constructor: make
+      arguments: [%user.class%, @sf_event_dispatcher, @storage, %user.param%, @request]
+
+    sf_user: @user
+
+    routing:
+      class: sfRoutingFactory
+      constructor: make
+      arguments: [%routing.class%, @request, @sf_event_dispatcher, %routing.cache%, %routing.param%]
+
+    view_cache:
+      shared: false
+      class: sfFileCache
+      arguments:
+        -
+          automatic_cleaning_factor: 0
+          cache_dir:                 %SF_TEMPLATE_CACHE_DIR%
+          lifetime:                  86400
+          prefix:                    %SF_APP_DIR%/template
+
+    view_cache_manager:
+      class: %view_cache_manager.class%
+      arguments: [@sf_context, %view_cache_manager.cache%, %view_cache_manager.param%]
+
+    i18n_cache:
+      shared: false
+      class: sfFileCache
+      arguments:
+        -
+          automatic_cleaning_factor: 0
+          cache_dir:                 %SF_I18N_CACHE_DIR%
+          lifetime:                  31556926
+          prefix:                    %SF_APP_DIR%/i18n
+
+    i18n:
+      class: sfI18NFactory
+      constructor: make
+      arguments: [%i18n.class%, @sf_application_configuration, %i18n.cache%, %i18n.param%]
+
+  parameters:
+    logger.class: sfFileLogger
+    logger.param:
+      level: debug
+      file: %SF_LOG_DIR%/%SF_APP%_%SF_ENVIRONMENT%.log
+
+    controller.class: sfFrontWebController
+
+    request.class: sfWebRequest
+    request.param:
+      logging:           %SF_LOGGING_ENABLED%
+      path_info_array:   SERVER
+      path_info_key:     PATH_INFO
+      relative_url_root: ~
+      no_script_name:    false
+      formats:
+        txt:  text/plain
+        js:   [application/javascript, application/x-javascript, text/javascript]
+        css:  text/css
+        json: [application/json, application/x-json]
+        xml:  [text/xml, application/xml, application/x-xml]
+        rdf:  application/rdf+xml
+        atom: application/atom+xml
+
+    response.class: sfWebResponse
+    response.param:
+      logging:           %SF_LOGGING_ENABLED%
+      charset:           %SF_CHARSET%
+      send_http_headers: true
+
+    storage.class: sfSessionStorage
+    storage.param:
+      session_name: symfony
+
+    user.class: myUser
+    user.param:
+      auto_shutdown:   false
+      timeout:         1800
+      logging:         %SF_LOGGING_ENABLED%
+      use_flash:       true
+      default_culture: %SF_DEFAULT_CULTURE%
+
+    routing.class: sfPatternRouting
+    routing.cache: ~
+    routing.param:
+      load_configuration:               true
+      suffix:                           ''
+      default_module:                   default
+      default_action:                   index
+      debug:                            %SF_DEBUG%
+      logging:                          %SF_LOGGING_ENABLED%
+      generate_shortest_url:            false
+      extra_parameters_as_query_string: false
+
+    view_cache_manager.class: sfViewCacheManager
+    view_cache_manager.cache: @view_cache
+    view_cache_manager.param:
+      cache_key_use_host_name: true
+      cache_key_use_vary_headers: true
+
+    i18n.class: sfI18N
+    i18n.cache: @i18n_cache
+    i18n.param:
+      source:               XLIFF
+      debug:                false
+      untranslated_prefix:  "[T]"
+      untranslated_suffix:  "[/T]"
+
+dev:
+  parameters:
+    logger.class: sfWebDebugLogger
+    logger.param:
+      level: debug
+      condition:       %SF_WEB_DEBUG%
+      xdebug_logging:  false
+      web_debug_class: sfWebDebug
+
+test:
+  parameters:
+    logger.class: sfNoLogger
+    logger.param: []
+
+    storage.class: sfSessionTestStorage
+    storage.param:
+      session_path: %SF_TEST_CACHE_DIR%/sessions

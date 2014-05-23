@@ -38,6 +38,7 @@ class sfRoutingConfigHandler extends sfYamlConfigHandler
       $route = $r->newInstanceArgs($routeConfig[1]);
 
       $routes = $route instanceof sfRouteCollection ? $route : array($name => $route);
+      /** @var sfRoute $route */
       foreach (sfPatternRouting::flattenRoutes($routes) as $name => $route)
       {
         $route->setDefaultOptions($options);
@@ -53,7 +54,10 @@ class sfRoutingConfigHandler extends sfYamlConfigHandler
 
   protected function getOptions()
   {
-    $config = sfFactoryConfigHandler::getConfiguration(sfContext::getInstance()->getConfiguration()->getConfigPaths('config/factories.yml'));
+    // todo FixMe
+    $config = sfFactoryConfigHandler::getConfiguration(
+      sfContext::getInstance()->getConfiguration()->getConfigPaths('config/factories.yml')
+    );
     return $config['routing']['param'];
   }
 

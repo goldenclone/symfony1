@@ -23,6 +23,11 @@
 class sfContext implements ArrayAccess
 {
   /**
+   * @var sfActionStack
+   */
+  protected $actionStack;
+
+  /**
    * @var sfEventDispatcher
    */
   protected $dispatcher = null;
@@ -30,14 +35,12 @@ class sfContext implements ArrayAccess
   /**
    * @var sfApplicationConfiguration
    */
-  protected $configuration       = null;
+  protected $configuration = null;
 
   /**
-   * @var array
+   * @var sfServiceContainer
    */
-  protected $serviceContainerConfiguration = array();
-
-  protected $factories           = array();
+  protected $serviceContainer = null;
 
   /**
    * @var sfContext[]
@@ -88,8 +91,9 @@ class sfContext implements ArrayAccess
    */
   public function initialize(sfApplicationConfiguration $configuration)
   {
+    $this->actionStack = new sfActionStack();
+    $this->dispatcher = $configuration->getEventDispatcher();
     $this->configuration = $configuration;
-    $this->dispatcher    = $configuration->getEventDispatcher();
 
     try
     {
@@ -152,26 +156,89 @@ class sfContext implements ArrayAccess
   }
 
   /**
-   * Loads the symfony factories.
+   * Retrieves the service container.
+   *
+   * @return sfServiceContainer The current sfServiceContainer implementation instance.
    */
-  public function loadFactories()
+  public function getServiceContainer()
   {
+    return $this->serviceContainer;
+  }
+
+  private function getServiceIfExists($name, $default = null)
+  {
+    if (!$this->getServiceContainer()->hasService($name)) {
+      return $default;
+    }
+
+    return $this->getService($name);
+  }
+
+  /**
+   * Retrieves a service from the service container.
+   *
+   * @param string $id The service identifier
+   *
+   * @return object The service instance
+   */
+  public function getService($id)
+  {
+    return $this->getServiceContainer()->getService($id);
+  }
+
+  protected function setDefaultServices()
+  {
+    $this->serviceContainer->setService('sf_context', $this);
+    $this->serviceContainer->setService('sf_event_dispatcher', $this->dispatcher);
+    $this->serviceContainer->setService('sf_application_configuration', $this->configuration);
+
     if (sfConfig::get('sf_use_database'))
     {
       // setup our database connections
-      $this->factories['databaseManager'] = new sfDatabaseManager($this->configuration, array('auto_shutdown' => false));
+      $this->serviceContainer->setService(
+        'databaseManager',
+        new sfDatabaseManager(
+          $this->configuration,
+          array('auto_shutdown' => false)
+      ));
     }
+  }
 
-    // create a new action stack
-    $this->factories['actionStack'] = new sfActionStack();
+  protected function initDispatcherDependentServices()
+  {
+    $this->getServiceContainer()->getService('routing');
+    if (sfConfig::get('sf_i18n')) {
+      $this->getServiceContainer()->getService('i18n');
+    }
+    $this->getServiceContainer()->getService('user');
+  }
 
+  /**
+   * Loads the symfony factories.
+   */
+  protected function loadFactories()
+  {
     if (sfConfig::get('sf_debug') && sfConfig::get('sf_logging_enabled'))
     {
       $timer = sfTimerManager::getTimer('Factories');
     }
 
-    // include the factories configuration
-    require($this->configuration->getConfigCache()->checkConfig('config/factories.yml'));
+    $className = require $this->configuration->getConfigCache()->checkConfig('config/services.yml', true);
+    $this->serviceContainer = new $className();
+
+    $this->setDefaultServices();
+
+    if (sfConfig::get('sf_factories_compatible_mode', true)) {
+      // include the factories configuration
+      require($this->configuration->getConfigCache()->checkConfig('config/factories.yml'));
+
+      $this->serviceContainer->setParameters(array_merge(
+        $this->serviceContainer->getParameters(),
+        sfConfig::get('sf_factory_transformed')
+      ));
+    }
+
+    $this->initDispatcherDependentServices();
 
     $this->dispatcher->notify(new sfEvent($this, 'context.load_factories'));
 
@@ -229,6 +296,16 @@ class sfContext implements ArrayAccess
   }
 
   /**
+   * Retrieve the ActionStack.
+   *
+   * @return sfActionStack the sfActionStack instance
+   */
+  public function getActionStack()
+  {
+    return $this->actionStack;
+  }
+
+  /**
    * Retrieve the action name for this context.
    *
    * @return string The currently executing action name, if one is set,
@@ -237,21 +314,12 @@ class sfContext implements ArrayAccess
   public function getActionName()
   {
     // get the last action stack entry
-    if ($this->factories['actionStack'] && $lastEntry = $this->factories['actionStack']->getLastEntry())
+    if ($lastEntry = $this->getActionStack()->getLastEntry())
     {
       return $lastEntry->getActionName();
     }
-  }
 
-
-  /**
-   * Retrieve the ActionStack.
-   *
-   * @return sfActionStack the sfActionStack instance
-   */
-  public function getActionStack()
-  {
-    return $this->factories['actionStack'];
+    return null;
   }
 
   /**
@@ -261,7 +329,7 @@ class sfContext implements ArrayAccess
    */
    public function getController()
    {
-     return isset($this->factories['controller']) ? $this->factories['controller'] : null;
+     return $this->getServiceIfExists('controller');
    }
 
   /**
@@ -271,12 +339,21 @@ class sfContext implements ArrayAccess
    */
   public function getLogger()
   {
-    if (!isset($this->factories['logger']))
-    {
-      $this->factories['logger'] = new sfNoLogger($this->dispatcher);
+    if (!$this->has('logger')) {
+      $this->set('logger', new sfNoLogger($this->dispatcher));
     }
 
-    return $this->factories['logger'];
+    $this->getService('logger');
+  }
+
+  /**
+   * Retrieve the database manager.
+   *
+   * @return sfDatabaseManager The current sfDatabaseManager instance.
+   */
+  public function getDatabaseManager()
+  {
+    return $this->getServiceIfExists('databaseManager');
   }
 
   /**
@@ -295,22 +372,11 @@ class sfContext implements ArrayAccess
    */
   public function getDatabaseConnection($name = 'default')
   {
-    if (null !== $this->factories['databaseManager'])
-    {
-      return $this->factories['databaseManager']->getDatabase($name)->getConnection();
+    if ($this->has('databaseManager')) {
+      return $this->getDatabaseManager()->getDatabase($name)->getConnection();
     }
 
     return null;
-  }
-
-  /**
-   * Retrieve the database manager.
-   *
-   * @return sfDatabaseManager The current sfDatabaseManager instance.
-   */
-  public function getDatabaseManager()
-  {
-    return isset($this->factories['databaseManager']) ? $this->factories['databaseManager'] : null;
   }
 
   /**
@@ -322,10 +388,12 @@ class sfContext implements ArrayAccess
   public function getModuleDirectory()
   {
     // get the last action stack entry
-    if (isset($this->factories['actionStack']) && $lastEntry = $this->factories['actionStack']->getLastEntry())
+    if ($lastEntry = $this->getActionStack()->getLastEntry())
     {
       return sfConfig::get('sf_app_module_dir').'/'.$lastEntry->getModuleName();
     }
+
+    return null;
   }
 
   /**
@@ -337,10 +405,12 @@ class sfContext implements ArrayAccess
   public function getModuleName()
   {
     // get the last action stack entry
-    if (isset($this->factories['actionStack']) && $lastEntry = $this->factories['actionStack']->getLastEntry())
+    if ($lastEntry = $this->getActionStack()->getLastEntry())
     {
       return $lastEntry->getModuleName();
     }
+
+    return null;
   }
 
   /**
@@ -350,7 +420,7 @@ class sfContext implements ArrayAccess
    */
   public function getRequest()
   {
-    return isset($this->factories['request']) ? $this->factories['request'] : null;
+    return $this->getServiceIfExists('request');
   }
 
   /**
@@ -360,7 +430,7 @@ class sfContext implements ArrayAccess
    */
   public function getResponse()
   {
-    return isset($this->factories['response']) ? $this->factories['response'] : null;
+    return $this->getServiceIfExists('response');
   }
 
   /**
@@ -372,7 +442,7 @@ class sfContext implements ArrayAccess
    */
   public function setResponse($response)
   {
-    $this->factories['response'] = $response;
+    $this->getServiceContainer()->setService('response', $response);
   }
 
   /**
@@ -382,7 +452,7 @@ class sfContext implements ArrayAccess
    */
   public function getStorage()
   {
-    return isset($this->factories['storage']) ? $this->factories['storage'] : null;
+    return $this->getServiceIfExists('storage');
   }
 
   /**
@@ -392,7 +462,7 @@ class sfContext implements ArrayAccess
    */
   public function getViewCacheManager()
   {
-    return isset($this->factories['viewCacheManager']) ? $this->factories['viewCacheManager'] : null;
+    return $this->getServiceIfExists('view_cache_manager');
   }
 
   /**
@@ -407,7 +477,7 @@ class sfContext implements ArrayAccess
       throw new sfConfigurationException('You must enable i18n support in your settings.yml configuration file.');
     }
 
-    return $this->factories['i18n'];
+    return $this->getServiceIfExists('i18n'); // $this->serviceContainer['i18n'];
   }
 
   /**
@@ -417,7 +487,7 @@ class sfContext implements ArrayAccess
    */
   public function getRouting()
   {
-    return isset($this->factories['routing']) ? $this->factories['routing'] : null;
+    return $this->getServiceIfExists('routing');
   }
 
   /**
@@ -427,50 +497,8 @@ class sfContext implements ArrayAccess
    */
   public function getUser()
   {
-    return isset($this->factories['user']) ? $this->factories['user'] : null;
+    return $this->getServiceIfExists('user');
   }
-
-  /**
-   * Retrieves the service container.
-   *
-   * @return sfServiceContainer The current sfServiceContainer implementation instance.
-   */
-  public function getServiceContainer()
-  {
-    if (!isset($this->factories['service_container']))
-    {
-      /** @var sfServiceContainer $sc */
-      $sc = new $this->serviceContainerConfiguration['class']();
-      $sc->setService('sf_event_dispatcher', $this->dispatcher);
-      $sc->setService('sf_user', $this->getUser());
-
-      $this->factories['service_container'] = $sc;
-    }
-
-    return $this->factories['service_container'];
-  }
-
-  /**
-   * Set service container configuration
-   *
-   * @param array $config
-   */
-  public function setServiceContainerConfiguration(array $config)
-  {
-    $this->serviceContainerConfiguration = $config;
-  }
-
-  /**
-   * Retrieves a service from the service container.
-   *
-   * @param string $id The service identifier
-   *
-   * @return object The service instance
-   */
-   public function getService($id)
-   {
-     return $this->getServiceContainer()->getService($id);
-   }
 
   /**
    * Returns the configuration cache.
@@ -524,7 +552,7 @@ class sfContext implements ArrayAccess
    */
   public function offsetUnset($offset)
   {
-    unset($this->factories[$offset]);
+    $this->serviceContainer->setService($offset, null);
   }
 
   /**
@@ -536,12 +564,11 @@ class sfContext implements ArrayAccess
    */
   public function get($name)
   {
-    if (!$this->has($name))
-    {
+    try {
+      return $this->getService($name);
+    } catch (InvalidArgumentException $e) {
       throw new sfException(sprintf('The "%s" object does not exist in the current context.', $name));
     }
-
-    return $this->factories[$name];
   }
 
   /**
@@ -549,10 +576,12 @@ class sfContext implements ArrayAccess
    *
    * @param string $name    The name of the object to store
    * @param object $object  The object to store
+   *
+   * @return $this
    */
   public function set($name, $object)
   {
-    $this->factories[$name] = $object;
+    $this->serviceContainer->setService($name, $object);
   }
 
   /**
@@ -564,7 +593,7 @@ class sfContext implements ArrayAccess
    */
   public function has($name)
   {
-    return isset($this->factories[$name]);
+    return $this->serviceContainer->hasService($name);
   }
 
   /**
@@ -578,10 +607,10 @@ class sfContext implements ArrayAccess
   public function filterTemplateParameters(sfEvent $event, $parameters)
   {
     $parameters['sf_context']  = $this;
-    $parameters['sf_request']  = $this->factories['request'];
-    $parameters['sf_params']   = $this->factories['request']->getParameterHolder();
-    $parameters['sf_response'] = $this->factories['response'];
-    $parameters['sf_user']     = $this->factories['user'];
+    $parameters['sf_request']  = $this->getRequest();
+    $parameters['sf_params']   = $this->getRequest()->getParameterHolder();
+    $parameters['sf_response'] = $this->getResponse();
+    $parameters['sf_user']     = $this->getUser();
 
     return $parameters;
   }
@@ -609,7 +638,7 @@ class sfContext implements ArrayAccess
 
       if ('get' == $verb && $this->has($factory))
       {
-        return $this->factories[$factory];
+        return $this->getService($factory);
       }
       else if ('set' == $verb && isset($arguments[0]))
       {
