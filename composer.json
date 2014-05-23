@@ -1,5 +1,6 @@
 {
     "name": "goldenclone/symfony1",
+    "version": "1.5.1-alpha",
     "description": "Fork of symfony 1x",
     "license": "MIT",
     "type": "library",
