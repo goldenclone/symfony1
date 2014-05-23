@@ -62,6 +62,23 @@ class sfServiceContainer implements sfServiceContainerInterface, ArrayAccess, It
   }
 
   /**
+   * Return service if sfServiceReference passed and service exists
+   *
+   * @param mixed $v
+   *
+   * @return object
+   */
+  protected function resolveParameterValue($v)
+  {
+    if ($v instanceof sfServiceReference && $this->hasService((string) $v))
+    {
+      return $this->getService((string) $v);
+    }
+
+    return $v;
+  }
+
+/**
    * Sets the service container parameters.
    *
    * @param array $parameters An array of parameters

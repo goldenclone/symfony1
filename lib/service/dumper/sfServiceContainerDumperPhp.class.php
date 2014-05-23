@@ -47,7 +47,7 @@ class sfServiceContainerDumperPhp extends sfServiceContainerDumper
     ;
   }
 
-  protected function addServiceInclude($id, $definition)
+  protected function addServiceInclude($id, sfServiceDefinition $definition)
   {
     if (null !== $definition->getFile())
     {
@@ -55,7 +55,7 @@ class sfServiceContainerDumperPhp extends sfServiceContainerDumper
     }
   }
 
-  protected function addServiceShared($id, $definition)
+  protected function addServiceShared($id, sfServiceDefinition $definition)
   {
     if ($definition->isShared())
     {
@@ -67,7 +67,7 @@ EOF;
     }
   }
 
-  protected function addServiceReturn($id, $definition)
+  protected function addServiceReturn($id, sfServiceDefinition $definition)
   {
     if ($definition->isShared())
     {
@@ -89,7 +89,7 @@ EOF;
     }
   }
 
-  protected function addServiceInstance($id, $definition)
+  protected function addServiceInstance($id, sfServiceDefinition $definition)
   {
     $class = $this->dumpValue($definition->getClass());
 
@@ -116,7 +116,7 @@ EOF;
     }
   }
 
-  protected function addServiceMethodCalls($id, $definition)
+  protected function addServiceMethodCalls($id, sfServiceDefinition $definition)
   {
     $calls = '';
     foreach ($definition->getMethodCalls() as $call)
@@ -133,7 +133,7 @@ EOF;
     return $calls;
   }
 
-  protected function addServiceConfigurator($id, $definition)
+  protected function addServiceConfigurator($id, sfServiceDefinition $definition)
   {
     if (!$callable = $definition->getConfigurator())
     {
@@ -292,6 +292,17 @@ EOF;
 EOF;
   }
 
+  protected function dumpParameterValue($value)
+  {
+    $result = sprintf("\$this->getParameter('%s')", strtolower($value));
+
+    if ($this->container->getParameter($value) instanceof sfServiceReference) {
+      return '$this->resolveParameterValue(' . $result . ')';
+    }
+
+    return $result;
+  }
+
   protected function dumpValue($value)
   {
     if (is_array($value))
@@ -310,7 +321,7 @@ EOF;
     }
     elseif (is_object($value) && $value instanceof sfServiceParameter)
     {
-      return sprintf("\$this->getParameter('%s')", strtolower($value));
+      return $this->dumpParameterValue($value);
     }
     elseif (is_string($value))
     {
@@ -318,7 +329,7 @@ EOF;
       {
         // we do this to deal with non string values (boolean, integer, ...)
         // the preg_replace_callback converts them to strings
-        return sprintf("\$this->getParameter('%s')", strtolower($match[1]));
+        return $this->dumpParameterValue($match[1]);
       }
       else
       {

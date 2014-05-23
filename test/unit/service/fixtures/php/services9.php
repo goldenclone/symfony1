@@ -23,7 +23,7 @@ class ProjectServiceContainer extends sfServiceContainer
   {
     if (isset($this->shared['bar'])) return $this->shared['bar'];
 
-    $instance = new FooClass('foo', $this->getService('foo.baz'), $this->getParameter('foo_bar'));
+    $instance = new FooClass('foo', $this->getService('foo.baz'), $this->resolveParameterValue($this->getParameter('foo_bar')));
     $this->getService('foo.baz')->configure($instance);
 
     return $this->shared['bar'] = $instance;
