@@ -65,8 +65,37 @@ class sfServiceContainerLoaderArray extends sfServiceContainerLoader
     return $content;
   }
 
+  protected function validateServiceDefinition($service)
+  {
+    if (!is_array($service)) {
+      return;
+    }
+
+    static $validKeys = [
+      'class' => true,
+      'shared' => true,
+      'constructor' => true,
+      'file' => true,
+      'arguments' => true,
+      'configurator' => true,
+      'calls' => true
+    ];
+
+    $diff = array_diff_key($service, $validKeys);
+    if (!empty($diff)) {
+      throw new InvalidArgumentException(
+        sprintf(
+          'Unknown keys %s in service definition.',
+          implode(', ', array_keys($diff))
+        )
+      );
+    };
+  }
+
   protected function parseDefinition($service)
   {
+    $this->validateServiceDefinition($service);
+
     if (is_string($service) && 0 === strpos($service, '@'))
     {
       return substr($service, 1);
