@@ -62,6 +62,7 @@ class sfServiceConfigHandler extends sfYamlConfigHandler
   {
     $config = self::parseYamls($configFiles);
     $config = self::flattenConfigurationWithEnvironment($config);
+    $config = self::replaceConstants($config);
 
     return $config;
   }
