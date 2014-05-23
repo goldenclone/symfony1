@@ -343,7 +343,7 @@ class sfContext implements ArrayAccess
       $this->set('logger', new sfNoLogger($this->dispatcher));
     }
 
-    $this->getService('logger');
+    return $this->getService('logger');
   }
 
   /**
