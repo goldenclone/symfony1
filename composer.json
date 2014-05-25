@@ -6,10 +6,5 @@
     "autoload": {
         "files": ["autoload.php"]
     },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.5"
-        }
-    },
     "bin": ["data/bin/symfony"]
 }
