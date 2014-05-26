@@ -206,11 +206,21 @@ class sfContext implements ArrayAccess
 
   protected function initDispatcherDependentServices()
   {
-    $this->getServiceContainer()->getService('routing');
-    if (sfConfig::get('sf_i18n')) {
-      $this->getServiceContainer()->getService('i18n');
+    if (sfConfig::get('sf_logging_enabled'))
+    {
+      if (!$this->has('logger'))
+      {
+        $this->set('logger', new sfNoLogger($this->dispatcher));
+      }
+      $this->getService('logger');
     }
-    $this->getServiceContainer()->getService('user');
+
+    $this->getService('routing');
+    if (sfConfig::get('sf_i18n'))
+    {
+      $this->getService('i18n');
+    }
+    $this->getService('user');
   }
 
   /**
