@@ -3,7 +3,7 @@
 /*
  * This file is part of the symfony package.
  * (c) 2004-2006 Fabien Potencier <fabien.potencier@symfony-project.com>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -204,7 +204,14 @@ class sfMemcacheCache extends sfCache
   public function getMany($keys)
   {
     $values = array();
-    foreach ($this->memcache->get(array_map(create_function('$k', 'return "'.$this->getOption('prefix').'".$k;'), $keys)) as $key => $value)
+    $keys = array_map(
+      function ($k) {
+        return $this->getOption('prefix') . $k;
+      },
+      $keys
+    );
+
+    foreach ($this->memcache->get($keys) as $key => $value)
     {
       $values[str_replace($this->getOption('prefix'), '', $key)] = $value;
     }
